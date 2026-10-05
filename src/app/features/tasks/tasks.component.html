@@ -1,0 +1,84 @@
+<h1>Mis tareas</h1>
+
+<section class="card new-task" aria-labelledby="new-task-title">
+  <h2 id="new-task-title">Nueva tarea</h2>
+  <form [formGroup]="form" (ngSubmit)="add()" novalidate>
+    <div class="field">
+      <label for="title">Título</label>
+      <input id="title" type="text" formControlName="title" maxlength="200" />
+      @if (form.controls.title.invalid && form.controls.title.touched) {
+        <div class="field-error">El título es obligatorio.</div>
+      }
+    </div>
+    <div class="field">
+      <label for="description">Descripción (opcional)</label>
+      <textarea id="description" rows="2" formControlName="description" maxlength="2000"></textarea>
+    </div>
+    <button class="btn" type="submit">Agregar</button>
+  </form>
+</section>
+
+@if (error(); as message) {
+  <div class="alert" role="alert">{{ message }}</div>
+}
+
+<div class="filters" role="group" aria-label="Filtrar por estado">
+  <button type="button" class="chip" [attr.aria-pressed]="filter() === null" (click)="setFilter(null)">Todas</button>
+  @for (status of statuses; track status) {
+    <button type="button" class="chip" [attr.aria-pressed]="filter() === status" (click)="setFilter(status)">
+      {{ labels[status] }}
+    </button>
+  }
+</div>
+
+<div aria-live="polite">
+  @if (loading()) {
+    <p class="muted">Cargando…</p>
+  } @else if (tasks().length === 0) {
+    <p class="muted empty">
+      {{ filter() ? 'No hay tareas con este estado.' : 'Aún no tienes tareas. Agrega la primera arriba.' }}
+    </p>
+  }
+</div>
+
+<ul class="task-list">
+  @for (task of tasks(); track task.id) {
+    <li class="card task" [attr.data-status]="task.status">
+      <div class="task-main">
+        <strong class="task-title">{{ task.title }}</strong>
+        @if (task.description) {
+          <p class="muted task-desc">{{ task.description }}</p>
+        }
+        <small class="muted">Creada el {{ task.createdAt | date: 'dd/MM/yyyy' }}</small>
+      </div>
+
+      <div class="task-actions">
+        <select [attr.aria-label]="'Estado de la tarea ' + task.title" [value]="task.status" (change)="onStatusChange(task, $event)">
+          @for (status of statuses; track status) {
+            <option [value]="status" [selected]="status === task.status">{{ labels[status] }}</option>
+          }
+        </select>
+
+        @if (confirmingId() === task.id) {
+          <span class="confirm">
+            ¿Eliminar?
+            <button type="button" class="btn btn-danger" (click)="confirmDelete(task)">Sí</button>
+            <button type="button" class="btn btn-ghost" (click)="cancelDelete()">No</button>
+          </span>
+        } @else {
+          <button type="button" class="btn btn-ghost" [attr.aria-label]="'Eliminar ' + task.title" (click)="askDelete(task)">
+            Eliminar
+          </button>
+        }
+      </div>
+    </li>
+  }
+</ul>
+
+@if (totalPages() > 1) {
+  <nav class="pager" aria-label="Paginación">
+    <button type="button" class="btn btn-ghost" [disabled]="page() === 1" (click)="goTo(page() - 1)">Anterior</button>
+    <span class="muted">Página {{ page() }} de {{ totalPages() }}</span>
+    <button type="button" class="btn btn-ghost" [disabled]="page() === totalPages()" (click)="goTo(page() + 1)">Siguiente</button>
+  </nav>
+}
